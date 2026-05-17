@@ -1,0 +1,35 @@
+<launch>
+  <arg name="lidar_topic" default="/livox/lidar"/>
+  <arg name="camera_topic" default="/camera/depth/points"/>
+  <arg name="output_topic" default="/fusion/points"/>
+  <arg name="target_frame" default=""/>
+  <arg name="camera_cache_timeout" default="0.5"/>
+  <arg name="camera_intensity" default="20.0"/>
+  <arg name="allow_untransformed_fallback" default="true"/>
+
+  <arg name="publish_static_tf" default="true"/>
+  <arg name="tf_parent_frame" default="camera_depth_optical_frame"/>
+  <arg name="tf_child_frame" default="livox_frame"/>
+  <arg name="tf_x" default="0.0"/>
+  <arg name="tf_y" default="-0.05"/>
+  <arg name="tf_z" default="-0.055"/>
+  <arg name="tf_roll" default="0.0"/>
+  <arg name="tf_pitch" default="-1.57079632679"/>
+  <arg name="tf_yaw" default="1.57079632679"/>
+  <arg name="tf_rate" default="100"/>
+
+  <group if="$(arg publish_static_tf)">
+    <node pkg="tf" type="static_transform_publisher" name="lidar_camera_static_tf"
+          args="$(arg tf_x) $(arg tf_y) $(arg tf_z) $(arg tf_yaw) $(arg tf_pitch) $(arg tf_roll) $(arg tf_parent_frame) $(arg tf_child_frame) $(arg tf_rate)"/>
+  </group>
+
+  <node pkg="my_drone" type="pointcloud_fusion_node" name="pointcloud_fusion" output="screen">
+    <param name="lidar_topic" value="$(arg lidar_topic)"/>
+    <param name="camera_topic" value="$(arg camera_topic)"/>
+    <param name="output_topic" value="$(arg output_topic)"/>
+    <param name="target_frame" value="$(arg target_frame)"/>
+    <param name="camera_cache_timeout" value="$(arg camera_cache_timeout)"/>
+    <param name="camera_intensity" value="$(arg camera_intensity)"/>
+    <param name="allow_untransformed_fallback" value="$(arg allow_untransformed_fallback)"/>
+  </node>
+</launch>

@@ -1,0 +1,130 @@
+<launch>
+  <arg name="start_livox" default="true"/>
+  <arg name="start_orbbec" default="true"/>
+  <arg name="start_livox_converter" default="true"/>
+  <arg name="start_bridge" default="true"/>
+  <arg name="start_imu_fixer" default="true"/>
+  <arg name="start_lvi" default="true"/>
+  <arg name="start_robot_state_publisher" default="true"/>
+  <arg name="start_rviz" default="true"/>
+  <arg name="start_odom_alias" default="true"/>
+  <arg name="camera_stamp_mode" default="offset"/>
+
+  <arg name="livox_launch" default="msg_MID360.launch"/>
+  <arg name="orbbec_launch" default="gemini_330_series.launch"/>
+
+  <arg name="lidar_topic" default="/livox/lidar"/>
+  <arg name="lvi_lidar_topic" default="/livox/lidar_pointcloud2"/>
+  <arg name="imu_topic" default="/livox/imu"/>
+  <arg name="imu_out_topic" default="/imu_raw"/>
+  <arg name="image_topic" default="/camera/color/image_raw"/>
+  <arg name="camera_info_topic" default="/camera/color/camera_info"/>
+
+  <arg name="lvi_image_topic" default="/camera_sync/color/image_raw"/>
+  <arg name="lvi_camera_info_topic" default="/camera_sync/color/camera_info"/>
+  <arg name="lvi_odom_topic" default="/lvi_sam/lidar/mapping/odometry"/>
+  <arg name="odom_alias_topic" default="/Odometry"/>
+
+  <arg name="imu_config_path" default="$(find livox_ros_driver2)/config/MID360_config.json"/>
+  <arg name="vins_config_file" default="$(find lvi_sam)/config/params_camera_g330_pinhole.yaml"/>
+  <arg name="lvi_runtime_lib_dir" default="/home/uav/catkin_ws/third_party/gtsam-4.0.2/install/lib"/>
+
+  <group if="$(arg start_livox)">
+    <include file="$(find livox_ros_driver2)/launch_ROS1/$(arg livox_launch)"/>
+  </group>
+
+  <group if="$(arg start_orbbec)">
+    <include file="$(find orbbec_camera)/launch/$(arg orbbec_launch)"/>
+  </group>
+
+  <group if="$(arg start_livox_converter)">
+    <node pkg="my_drone" type="livox_custom_to_pointcloud2_node"
+          name="livox_custom_to_pointcloud2" output="screen">
+      <param name="input_topic" value="$(arg lidar_topic)"/>
+      <param name="output_topic" value="$(arg lvi_lidar_topic)"/>
+    </node>
+  </group>
+
+  <group if="$(arg start_bridge)">
+    <include file="$(find my_drone)/launch/camera_use_lidar_time.launch">
+      <arg name="lidar_topic" value="$(arg lidar_topic)"/>
+      <arg name="image_topic" value="$(arg image_topic)"/>
+      <arg name="image_out_topic" value="$(arg lvi_image_topic)"/>
+      <arg name="camera_info_topic" value="$(arg camera_info_topic)"/>
+      <arg name="camera_info_out_topic" value="$(arg lvi_camera_info_topic)"/>
+      <arg name="stamp_mode" value="$(arg camera_stamp_mode)"/>
+    </include>
+  </group>
+
+  <group unless="$(arg start_bridge)">
+    <node pkg="topic_tools" type="relay" name="lvi_image_relay"
+          args="$(arg image_topic) $(arg lvi_image_topic)" output="screen"/>
+    <node pkg="topic_tools" type="relay" name="lvi_camera_info_relay"
+          args="$(arg camera_info_topic) $(arg lvi_camera_info_topic)" output="screen"/>
+  </group>
+
+  <group if="$(arg start_imu_fixer)">
+    <node pkg="my_drone" type="imu_fixer" name="imu_fixer" output="screen">
+      <param name="input_topic" value="$(arg imu_topic)"/>
+      <param name="output_topic" value="$(arg imu_out_topic)"/>
+      <param name="config_path" value="$(arg imu_config_path)"/>
+      <param name="acc_scale" value="9.80511"/>
+      <param name="rotate_orientation" value="false"/>
+    </node>
+  </group>
+
+  <group unless="$(arg start_imu_fixer)">
+    <node pkg="topic_tools" type="relay" name="lvi_imu_relay"
+          args="$(arg imu_topic) $(arg imu_out_topic)" output="screen"/>
+  </group>
+
+  <group if="$(arg start_robot_state_publisher)">
+    <include file="$(find lvi_sam)/launch/include/module_robot_state_publisher.launch"/>
+  </group>
+
+  <group if="$(arg start_rviz)">
+    <include file="$(find lvi_sam)/launch/include/module_rviz.launch"/>
+  </group>
+
+  <group if="$(arg start_lvi)">
+    <rosparam file="$(find lvi_sam)/config/params_lidar.yaml" command="load"/>
+    <param name="lvi_sam/pointCloudTopic" value="$(arg lidar_topic)"/>
+    <param name="lvi_sam/imuTopic" value="$(arg imu_topic)"/>
+    <param name="vins_config_file" type="string" value="$(arg vins_config_file)"/>
+
+    <node pkg="lvi_sam" type="lvi_sam_imuPreintegration"
+          name="lvi_sam_imuPreintegration" output="screen" respawn="true">
+      <env name="LD_LIBRARY_PATH" value="$(arg lvi_runtime_lib_dir):$(optenv LD_LIBRARY_PATH)"/>
+    </node>
+    <node pkg="lvi_sam" type="lvi_sam_imageProjection"
+          name="lvi_sam_imageProjection" output="screen" respawn="true">
+      <env name="LD_LIBRARY_PATH" value="$(arg lvi_runtime_lib_dir):$(optenv LD_LIBRARY_PATH)"/>
+    </node>
+    <node pkg="lvi_sam" type="lvi_sam_featureExtraction"
+          name="lvi_sam_featureExtraction" output="screen" respawn="true">
+      <env name="LD_LIBRARY_PATH" value="$(arg lvi_runtime_lib_dir):$(optenv LD_LIBRARY_PATH)"/>
+    </node>
+    <node pkg="lvi_sam" type="lvi_sam_mapOptmization"
+          name="lvi_sam_mapOptmization" output="screen" respawn="true">
+      <env name="LD_LIBRARY_PATH" value="$(arg lvi_runtime_lib_dir):$(optenv LD_LIBRARY_PATH)"/>
+    </node>
+
+    <node pkg="lvi_sam" type="lvi_sam_visual_feature"
+          name="lvi_sam_visual_feature" output="screen" respawn="true">
+      <env name="LD_LIBRARY_PATH" value="$(arg lvi_runtime_lib_dir):$(optenv LD_LIBRARY_PATH)"/>
+    </node>
+    <node pkg="lvi_sam" type="lvi_sam_visual_odometry"
+          name="lvi_sam_visual_odometry" output="screen" respawn="true">
+      <env name="LD_LIBRARY_PATH" value="$(arg lvi_runtime_lib_dir):$(optenv LD_LIBRARY_PATH)"/>
+    </node>
+    <node pkg="lvi_sam" type="lvi_sam_visual_loop"
+          name="lvi_sam_visual_loop" output="screen" respawn="true">
+      <env name="LD_LIBRARY_PATH" value="$(arg lvi_runtime_lib_dir):$(optenv LD_LIBRARY_PATH)"/>
+    </node>
+  </group>
+
+  <group if="$(arg start_odom_alias)">
+    <node pkg="topic_tools" type="relay" name="lvi_odom_relay"
+          args="$(arg lvi_odom_topic) $(arg odom_alias_topic)" output="screen"/>
+  </group>
+</launch>

@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "*.py": "python",
+        "plyconfig.json": "jsonc"
+    },
+    "cmake.sourceDirectory": "/home/uav/catkin_ws/small_gicp"
+}

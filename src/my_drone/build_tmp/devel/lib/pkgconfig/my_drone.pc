@@ -1,0 +1,8 @@
+prefix=/home/uav/catkin_ws/src/my_drone/build_tmp/devel
+
+Name: my_drone
+Description: Description of my_drone
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

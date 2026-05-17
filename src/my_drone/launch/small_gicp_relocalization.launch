@@ -1,0 +1,41 @@
+<launch>
+  <arg name="map_pcd_path" default="/home/uav/catkin_ws/src/FreeDOM/generated_pcd/static_map_voxel.pcd"/>
+  <arg name="publish_map_pcd" default="true"/>
+  <arg name="map_cloud_topic" default="/map_pcd"/>
+  <arg name="map_publish_interval" default="1.0"/>
+  <arg name="input_cloud_topic" default="/cloud_registered_body"/>
+  <arg name="output_odom_topic" default="/small_gicp/relocalization_odom"/>
+  <arg name="map_frame" default="camera_init"/>
+  <arg name="base_frame" default="base_link"/>
+  <arg name="tf_child_frame" default="small_gicp_base_link"/>
+
+  <node if="$(arg publish_map_pcd)" pkg="pcl_ros" type="pcd_to_pointcloud" name="map_pcd_publisher" output="screen"
+        args="$(arg map_pcd_path) $(arg map_publish_interval)">
+    <param name="frame_id" value="$(arg map_frame)"/>
+    <remap from="cloud_pcd" to="$(arg map_cloud_topic)"/>
+  </node>
+
+  <arg name="num_threads" default="4"/>
+  <arg name="num_neighbors" default="20"/>
+  <arg name="min_points" default="40"/>
+  <arg name="map_voxel" default="0.4"/>
+  <arg name="scan_voxel" default="0.2"/>
+  <arg name="max_corr_dist" default="1.5"/>
+  <arg name="publish_tf" default="true"/>
+
+  <node pkg="my_drone" type="small_gicp_relocalization_node" name="small_gicp_relocalization_node" output="screen">
+    <param name="map_pcd_path" value="$(arg map_pcd_path)"/>
+    <param name="input_cloud_topic" value="$(arg input_cloud_topic)"/>
+    <param name="output_odom_topic" value="$(arg output_odom_topic)"/>
+    <param name="map_frame" value="$(arg map_frame)"/>
+    <param name="base_frame" value="$(arg base_frame)"/>
+    <param name="tf_child_frame" value="$(arg tf_child_frame)"/>
+    <param name="num_threads" value="$(arg num_threads)"/>
+    <param name="num_neighbors" value="$(arg num_neighbors)"/>
+    <param name="min_points" value="$(arg min_points)"/>
+    <param name="map_voxel" value="$(arg map_voxel)"/>
+    <param name="scan_voxel" value="$(arg scan_voxel)"/>
+    <param name="max_corr_dist" value="$(arg max_corr_dist)"/>
+    <param name="publish_tf" value="$(arg publish_tf)"/>
+  </node>
+</launch>

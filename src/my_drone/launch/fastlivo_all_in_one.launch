@@ -1,0 +1,58 @@
+<launch>
+  <arg name="start_livox" default="true"/>
+  <arg name="start_orbbec" default="true"/>
+  <arg name="start_bridge" default="true"/>
+  <arg name="start_imu_fixer" default="true"/>
+  <arg name="start_fastlivo" default="true"/>
+
+  <arg name="livox_launch" default="msg_MID360.launch"/>
+  <arg name="orbbec_launch" default="gemini_330_series.launch"/>
+  <arg name="fastlivo_launch" default="mapping_avia.launch"/>
+
+  <arg name="lidar_topic" default="/livox/lidar"/>
+  <arg name="imu_topic" default="/livox/imu"/>
+  <arg name="imu_out_topic" default="/livox/imu2"/>
+  <arg name="image_topic" default="/camera/color/image_raw"/>
+  <arg name="image_out_topic" default="/camera_sync/color/image_raw"/>
+  <arg name="camera_info_topic" default="/camera/color/camera_info"/>
+  <arg name="camera_info_out_topic" default="/camera_sync/color/camera_info"/>
+  <arg name="fastlivo_odom_topic" default="/aft_mapped_to_init"/>
+  <arg name="odom_alias_topic" default="/Odometry"/>
+
+  <group if="$(arg start_livox)">
+    <include file="$(find livox_ros_driver2)/launch_ROS1/$(arg livox_launch)"/>
+  </group>
+
+  <group if="$(arg start_orbbec)">
+    <include file="$(find orbbec_camera)/launch/$(arg orbbec_launch)"/>
+  </group>
+
+  <group if="$(arg start_bridge)">
+    <include file="$(find my_drone)/launch/camera_use_lidar_time.launch">
+      <arg name="lidar_topic" value="$(arg lidar_topic)"/>
+      <arg name="image_topic" value="$(arg image_topic)"/>
+      <arg name="image_out_topic" value="$(arg image_out_topic)"/>
+      <arg name="camera_info_topic" value="$(arg camera_info_topic)"/>
+      <arg name="camera_info_out_topic" value="$(arg camera_info_out_topic)"/>
+    </include>
+  </group>
+
+  <group if="$(arg start_imu_fixer)">
+    <node pkg="my_drone" type="imu_fixer" name="imu_fixer" output="screen">
+      <param name="input_topic" value="$(arg imu_topic)"/>
+      <param name="output_topic" value="$(arg imu_out_topic)"/>
+      <param name="config_path" value="$(find livox_ros_driver2)/config/MID360_config.json"/>
+    </node>
+  </group>
+
+  <group if="$(arg start_fastlivo)">
+    <include file="$(find fast_livo)/launch/$(arg fastlivo_launch)">
+      <arg name="imu_topic" value="$(arg imu_out_topic)"/>
+    </include>
+  </group>
+
+  <group if="$(arg start_fastlivo)">
+    <node pkg="topic_tools" type="relay" name="fastlivo_odom_relay"
+          args="$(arg fastlivo_odom_topic) $(arg odom_alias_topic)" output="screen"/>
+  </group>
+</launch>

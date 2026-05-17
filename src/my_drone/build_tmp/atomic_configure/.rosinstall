@@ -1,0 +1,2 @@
+- setup-file:
+    local-name: /home/uav/catkin_ws/src/my_drone/build_tmp/devel/setup.sh

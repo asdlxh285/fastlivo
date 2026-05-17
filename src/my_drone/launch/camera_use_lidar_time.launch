@@ -1,0 +1,26 @@
+<launch>
+  <arg name="lidar_topic" default="/livox/lidar"/>
+  <arg name="image_topic" default="/camera/color/image_raw"/>
+  <arg name="image_out_topic" default="/camera_sync/color/image_raw"/>
+  <arg name="camera_info_topic" default="/camera/color/camera_info"/>
+  <arg name="camera_info_out_topic" default="/camera_sync/color/camera_info"/>
+  <arg name="use_lidar_seq" default="false"/>
+  <arg name="stamp_mode" default="offset"/>
+  <arg name="offset_alpha" default="0.05"/>
+  <arg name="max_offset_jump" default="0.5"/>
+
+  <node pkg="my_drone"
+        type="camera_use_lidar_time.py"
+        name="camera_use_lidar_time"
+        output="screen">
+    <param name="lidar_topic" value="$(arg lidar_topic)"/>
+    <param name="image_topic" value="$(arg image_topic)"/>
+    <param name="image_out_topic" value="$(arg image_out_topic)"/>
+    <param name="camera_info_topic" value="$(arg camera_info_topic)"/>
+    <param name="camera_info_out_topic" value="$(arg camera_info_out_topic)"/>
+    <param name="use_lidar_seq" value="$(arg use_lidar_seq)"/>
+    <param name="stamp_mode" value="$(arg stamp_mode)"/>
+    <param name="offset_alpha" value="$(arg offset_alpha)"/>
+    <param name="max_offset_jump" value="$(arg max_offset_jump)"/>
+  </node>
+</launch>
